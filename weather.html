@@ -72,7 +72,7 @@
   .place { font-size: .9em; color: var(--sub); display: flex; align-items: center; gap: .3em; }
   .place::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--hi); display: inline-block; }
   .now-main { display: flex; align-items: center; gap: .5em; }
-  .now-main .big { width: 5.2em; flex: none; }
+  .now-main .big { width: 2.8em; flex: none; }
   .now-main .big svg { width: 100%; height: auto; display: block; }
   .temp { font-size: 3em; font-weight: 300; line-height: 1; letter-spacing: -.02em; }
   .temp small { font-size: .4em; font-weight: 400; vertical-align: top; margin-left: .08em; color: var(--sub); }
@@ -92,7 +92,7 @@
   .day .t .hi, .day .t .lo { font-weight: 500; }
   .day .dl.sun { color: var(--hi); } .day .dl.sat { color: var(--lo); }
   .day .dd { color: var(--sub); font-size: .8em; margin-top: -.3em; }
-  .day .ico svg { width: min(8.5cqw, 34cqh, 80px); height: auto; display: block; }
+  .day .ico svg { width: min(4.5cqw, 20cqh, 40px); height: auto; display: block; }
   .day .t { display: flex; gap: .4em; }
   .pop { color: var(--pop); font-size: .85em; display: inline-flex; align-items: center; gap: .15em; white-space: nowrap; }
   .pop svg { width: .8em; height: .8em; }
@@ -105,9 +105,9 @@
     .wrap { gap: 6px; padding: 6px; }
     .week { gap: 4px; }
     .now { font-size: 11px; padding: .8em .8em; }
-    .now-main .big { width: 3.6em; }
+    .now-main .big { width: 2.4em; }
     .day { font-size: 10px; }
-    .day .ico svg { width: min(7.5cqw, 30cqh); }
+    .day .ico svg { width: min(4cqw, 18cqh); }
   }
   /* 高さが低いとき：補足の行を省く */
   @container (max-height: 210px) { .msg, .meta { display: none; } }
@@ -132,7 +132,7 @@
   .pattern p { opacity: .7; font-size: 13px; margin-bottom: 12px; }
   .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
   .cell { border: 1px solid rgba(127,127,127,.25); border-radius: 12px; overflow: hidden; }
-  .cell .box { height: 210px; }
+  .cell .box { height: 160px; }
   .cell .bar { padding: 10px 12px; font-size: 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid rgba(127,127,127,.25); }
   .cell code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; }
   .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
