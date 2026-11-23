@@ -59,6 +59,34 @@
   .s3 { --bg: #ffffff; }
   .s3.dark { --bg: #191919; }
 
+  .place b { font-weight: inherit; }
+
+  /* パターン3：横1列（地名・今日・7日分を1行に並べる） */
+  .s3 .wrap { display: flex; align-items: center; gap: 3cqw; padding: 8px 2.5cqw; height: 100%; min-height: 0; }
+  .s3 .now {
+    flex-direction: row; align-items: center; gap: 1.1em; padding: 0; max-width: none; flex: none;
+    font-size: clamp(12px, 1.9cqw, 17px);
+  }
+  .s3 .place { flex-direction: column; align-items: center; gap: 0; color: var(--ink); line-height: 1.3; }
+  .s3 .place::before { display: none; }
+  .s3 .place b { font-weight: 700; font-size: 1.05em; }
+  .s3 .place .pl-sub { color: var(--sub); font-size: .85em; }
+  .s3 .now-main { gap: .8em; }
+  .s3 .now-main .big { width: 2.4em; }
+  .s3 .temp { font-size: 1.7em; font-weight: 700; letter-spacing: 0; }
+  .s3 .temp small { font-size: .7em; font-weight: 700; color: inherit; vertical-align: baseline; margin-left: .15em; }
+  .s3 .desc { color: var(--ink); font-weight: 600; font-size: .85em; text-align: center; }
+  .s3 .hl, .s3 .meta, .s3 .msg { display: none; }
+  .s3 .week { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
+  .s3 .day { padding: 0; gap: .55em; font-size: clamp(11px, 1.45cqw, 14px); }
+  .s3 .day.today { outline: none; }
+  .s3 .day .dl { font-size: 1em; font-weight: 700; }
+  .s3 .day .dl.sun, .s3 .day .dl.sat { color: var(--ink); }
+  .s3 .day .dd, .s3 .day .pop { display: none; }
+  .s3 .day .ico svg { width: clamp(24px, 3cqw, 32px); }
+  .s3 .day .t { flex-direction: column; gap: .15em; line-height: 1.25; }
+  .s3 .day .t .hi, .s3 .day .t .lo { color: var(--ink); font-weight: 600; }
+
   /* ---- レイアウト ---- */
   .wrap {
     min-height: 100%; display: grid; gap: 10px; padding: 10px;
@@ -303,12 +331,13 @@
     el.dataset.g = night && GROUP[kind] === 'sunny' ? 'night' : GROUP[kind];
     const pop0 = d.precipitation_probability_max[0];
     const gNow = el.dataset.g;
+    const simple = el.classList.contains('s3');
 
     let days = '';
     for (let i = 0; i < d.time.length; i++) {
       const dt = new Date(d.time[i] + 'T00:00:00');
       const k = kindOf(d.weather_code[i]);
-      const label = i === 0 ? '今日' : i === 1 ? '明日' : DOW[dt.getDay()];
+      const label = i === 0 ? '今日' : i === 1 ? '明日' : DOW[dt.getDay()] + (simple ? '曜日' : '');
       const cls = dt.getDay() === 0 ? ' sun' : dt.getDay() === 6 ? ' sat' : '';
       const pop = d.precipitation_probability_max[i];
       days += `<div class="day card g-${GROUP[k]}${i === 0 ? ' today' : ''}" title="${LABEL[d.weather_code[i]] || ''}">` +
@@ -320,7 +349,7 @@
 
     el.innerHTML = '<div class="wrap">' +
       `<div class="now card g-${gNow}">` +
-        `<div class="place">${PLACE.name}</div>` +
+        `<div class="place"><b>${PLACE.name}</b><span class="pl-sub">の天気</span></div>` +
         `<div class="now-main"><div class="big">${icon(kind, night, pop0)}</div>` +
           `<div><div class="temp">${rnd(c.temperature_2m)}<small>°C</small></div><div class="desc">${LABEL[c.weather_code] || ''}</div></div></div>` +
         `<div class="hl"><span>最高 <span class="hi">${rnd(d.temperature_2m_max[0])}°</span></span><span>最低 <span class="lo">${rnd(d.temperature_2m_min[0])}°</span></span></div>` +
