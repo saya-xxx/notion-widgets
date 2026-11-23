@@ -19,13 +19,20 @@
 <script>
 (()=>{
  'use strict';
+ const tall=new URLSearchParams(location.search).get('layout')==='tall';
+ if(tall){
+  document.querySelector('svg').setAttribute('viewBox','0 0 360 400');
+  document.getElementById('time').setAttribute('y','366');
+  document.getElementById('date').setAttribute('y','392');
+  const style=document.createElement('style');style.textContent='.number{font-size:14px}.caption{font-size:16px}.time{font-size:32px}.date{font-size:12px}';document.head.appendChild(style);
+ }
  const ns='http://www.w3.org/2000/svg', root=document.getElementById('rulers');
  const make=(tag,attrs,parent)=>{const el=document.createElementNS(ns,tag);for(const [key,value]of Object.entries(attrs))el.setAttribute(key,value);parent.appendChild(el);return el;};
- const top=45,bottom=176,travel=bottom-top,markers=[];
+ const top=45,bottom=tall?326:176,travel=bottom-top,markers=[];
  const scales=[{x:45,max:24,major:6,label:'H'},{x:146,max:60,major:10,label:'M'},{x:247,max:60,major:10,label:'S'}];
  for(const scale of scales){
   const g=make('g',{},root),label=make('text',{x:scale.x+34,y:21,'text-anchor':'middle',class:'caption'},g);label.textContent=scale.label;
-  make('rect',{x:scale.x,y:31,width:68,height:158,rx:4,fill:'url(#paper)',filter:'url(#shadow)'},g);
+  make('rect',{x:scale.x,y:31,width:68,height:tall?308:158,rx:4,fill:'url(#paper)',filter:'url(#shadow)'},g);
   make('line',{x1:scale.x+12,y1:top,x2:scale.x+12,y2:bottom,stroke:'#a39782','stroke-width':'.6'},g);
   for(let value=0;value<=scale.max;value++){
    const y=bottom-value/scale.max*travel,major=value%scale.major===0,mid=value%5===0;
