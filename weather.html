@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>きょうの天気</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    background: #f7f6f3; color: #4a4453;
+  }
+  body.dark { background: #191919; color: #f1eef6; }
+
+  /* ---- 共通の色 ---- */
+  .ww {
+    --ink: #33323a; --sub: #8b8994; --hi: #d9735b; --lo: #5f86b8; --pop: #5f86b8;
+    --card: rgba(255,255,255,.55); --line: rgba(51,50,58,.1);
+    --i-sun: #f2b544; --i-moon: #e9c46a; --i-cloud: #cdd3dc; --i-cloud2: #aab4c3; --i-cloud3: #8d97a8;
+    --i-rain: #6f98cc; --i-snow: #9fb7d6;
+    width: 100%; height: 100%; container-type: size; overflow: auto; scrollbar-width: none;
+    color: var(--ink); background: var(--bg);
+  }
+  .ww.dark {
+    --ink: #ecebef; --sub: #9c9aa5; --hi: #ee9a84; --lo: #8fb0db; --pop: #8fb0db;
+    --card: rgba(255,255,255,.06); --line: rgba(255,255,255,.09);
+    --i-cloud: #a9b0bc; --i-cloud2: #8e97a6; --i-cloud3: #737d8e; --i-rain: #86ade0; --i-snow: #c9d6e8;
+  }
+
+  /* パターン1：パステル（天気で背景が変わる） */
+  .s1 { --bg: linear-gradient(160deg, #f1f3f6, #e8ebf0); }
+  .s1[data-g=sunny]  { --bg: linear-gradient(160deg, #faf5ea, #f2ece6); }
+  .s1[data-g=cloudy] { --bg: linear-gradient(160deg, #f1f3f6, #e8ebf0); }
+  .s1[data-g=rainy]  { --bg: linear-gradient(160deg, #eaf0f7, #e2e7f0); }
+  .s1[data-g=snowy]  { --bg: linear-gradient(160deg, #f3f6fa, #e9eef5); }
+  .s1[data-g=stormy] { --bg: linear-gradient(160deg, #eceaf2, #e2e5ec); }
+  .s1[data-g=night]  { --bg: linear-gradient(160deg, #eceef5, #e4e5ee); }
+  .s1.dark                  { --bg: linear-gradient(160deg, #23262c, #1d1f24); }
+  .s1.dark[data-g=sunny]    { --bg: linear-gradient(160deg, #2a2722, #1f1e1c); }
+  .s1.dark[data-g=rainy]    { --bg: linear-gradient(160deg, #1f2631, #1b1e25); }
+  .s1.dark[data-g=snowy]    { --bg: linear-gradient(160deg, #242931, #1e2128); }
+  .s1.dark[data-g=stormy]   { --bg: linear-gradient(160deg, #25232d, #1c1d23); }
+  .s1.dark[data-g=night]    { --bg: linear-gradient(160deg, #1c2030, #18191f); }
+  .s1 .card { background: var(--card); }
+
+  /* パターン2：ころころカード（1日ずつ色分け） */
+  .s2 { --bg: #fbfaf8; }
+  .s2.dark { --bg: #191919; }
+  .s2 .card { border-radius: 14px; }
+  .s2 .card.g-sunny  { background: #f7f0e1; } .s2.dark .card.g-sunny  { background: #2b2822; }
+  .s2 .card.g-cloudy { background: #eef0f3; } .s2.dark .card.g-cloudy { background: #26282c; }
+  .s2 .card.g-rainy  { background: #e7edf5; } .s2.dark .card.g-rainy  { background: #212831; }
+  .s2 .card.g-snowy  { background: #eff3f8; } .s2.dark .card.g-snowy  { background: #252a31; }
+  .s2 .card.g-stormy { background: #ebe9f1; } .s2.dark .card.g-stormy { background: #26242d; }
+  .s2 .card.g-night  { background: #ebedf4; } .s2.dark .card.g-night  { background: #21242f; }
+
+  /* パターン3：シンプル（Notionになじむ無地） */
+  .s3 { --bg: #ffffff; }
+  .s3.dark { --bg: #191919; }
+  .s3 .now { border-right: 1px solid var(--line); border-radius: 0; }
+  .s3 .day + .day { border-left: 1px solid var(--line); border-radius: 0; }
+
+  /* ---- レイアウト ---- */
+  .wrap {
+    min-height: 100%; display: grid; gap: 10px; padding: 10px;
+    grid-template-columns: auto minmax(0, 1fr); align-items: stretch;
+  }
+  .card { border-radius: 16px; }
+  .now {
+    display: flex; flex-direction: column; justify-content: center; gap: .4em;
+    padding: .7em 1em; font-size: clamp(11px, min(1.8cqw, 6.6cqh), 16px); max-width: 15em;
+  }
+  .place { font-size: .9em; color: var(--sub); display: flex; align-items: center; gap: .3em; }
+  .place::before { content: ""; width: .55em; height: .55em; border-radius: 50%; background: var(--hi); display: inline-block; }
+  .now-main { display: flex; align-items: center; gap: .5em; }
+  .now-main .big { width: 5.2em; flex: none; }
+  .now-main .big svg { width: 100%; height: auto; display: block; }
+  .temp { font-size: 3em; font-weight: 300; line-height: 1; letter-spacing: -.02em; }
+  .temp small { font-size: .4em; font-weight: 400; vertical-align: top; margin-left: .08em; color: var(--sub); }
+  .desc { color: var(--sub); margin-top: .25em; font-size: .9em; }
+  .hl { display: flex; gap: .9em; font-size: .9em; color: var(--sub); }
+  .hi { color: var(--hi); font-weight: 600; }
+  .lo { color: var(--lo); font-weight: 600; }
+  .meta { color: var(--sub); font-size: .8em; line-height: 1.6; letter-spacing: .02em; }
+  .msg { font-size: .8em; color: var(--sub); padding-top: .5em; border-top: 1px solid var(--line); }
+
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .day {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2em;
+    padding: .4em .1em; font-size: clamp(10px, min(1.6cqw, 6cqh), 15px); text-align: center; min-width: 0;
+  }
+  .day .dl { font-weight: 600; font-size: .9em; }
+  .day .t .hi, .day .t .lo { font-weight: 500; }
+  .day .dl.sun { color: var(--hi); } .day .dl.sat { color: var(--lo); }
+  .day .dd { color: var(--sub); font-size: .8em; margin-top: -.3em; }
+  .day .ico svg { width: min(8.5cqw, 34cqh, 80px); height: auto; display: block; }
+  .day .t { display: flex; gap: .4em; }
+  .pop { color: var(--pop); font-size: .85em; display: inline-flex; align-items: center; gap: .15em; white-space: nowrap; }
+  .pop svg { width: .8em; height: .8em; }
+  .day.today { outline: 2px solid var(--line); outline-offset: -2px; }
+  .s1 .day.today, .s2 .day.today { outline: none; box-shadow: 0 0 0 2px rgba(255,255,255,.7) inset; }
+  .s1.dark .day.today, .s2.dark .day.today { box-shadow: 0 0 0 2px rgba(255,255,255,.18) inset; }
+
+  /* 幅が狭めのとき：横並びのまま文字とアイコンを小さく */
+  @container (max-width: 700px) {
+    .wrap { gap: 6px; padding: 6px; }
+    .week { gap: 4px; }
+    .now { font-size: 11px; padding: .8em .8em; }
+    .now-main .big { width: 3.6em; }
+    .day { font-size: 10px; }
+    .day .ico svg { width: min(7.5cqw, 30cqh); }
+  }
+  /* 高さが低いとき：補足の行を省く */
+  @container (max-height: 210px) { .msg, .meta { display: none; } }
+  /* とても細いとき：今日の天気を上、1週間を縦のリストに */
+  @container (max-width: 460px) {
+    .wrap { grid-template-columns: 1fr; }
+    .now { max-width: none; font-size: 13px; }
+    .s3 .now { border-right: 0; border-bottom: 1px solid var(--line); }
+    .week { grid-template-columns: 1fr; gap: 6px; }
+    .day { flex-direction: row; justify-content: space-between; padding: .4em .9em; font-size: 13px; text-align: left; }
+    .day .dl { width: 3em; } .day .dd { margin: 0; width: 3em; }
+    .day .ico svg { width: 30px; }
+    .s3 .day + .day { border-left: 0; border-top: 1px solid var(--line); }
+  }
+
+  /* ---- パターン選択ページ ---- */
+  .gallery { max-width: 1200px; margin: 0 auto; padding: 32px 16px 64px; }
+  .gallery h1 { font-size: 22px; margin-bottom: 6px; }
+  .gallery .lead { opacity: .7; font-size: 14px; margin-bottom: 28px; line-height: 1.7; }
+  .pattern { margin-bottom: 40px; }
+  .pattern h2 { font-size: 17px; margin-bottom: 4px; }
+  .pattern p { opacity: .7; font-size: 13px; margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .cell { border: 1px solid rgba(127,127,127,.25); border-radius: 12px; overflow: hidden; }
+  .cell .box { height: 210px; }
+  .cell .bar { padding: 10px 12px; font-size: 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid rgba(127,127,127,.25); }
+  .cell code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: .7; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .sample { width: 104px; padding: 10px 6px; border-radius: 12px; border: 1px solid rgba(127,127,127,.25); text-align: center; font-size: 11px; opacity: .95; }
+  .sample svg { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
+  .cell button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(127,127,127,.35); background: transparent; color: inherit; cursor: pointer; }
+</style>
+</head>
+<body>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  // 場所（既定は神戸）。?lat=..&lon=..&name=.. で変更できます
+  const PLACE = {
+    name: params.get('name') || '神戸',
+    lat: parseFloat(params.get('lat')) || 34.6901,
+    lon: parseFloat(params.get('lon')) || 135.1955,
+  };
+  const STYLES = {
+    1: { name: 'グラデーション', desc: '今日の天気に合わせて背景の色がうっすら変わる' },
+    2: { name: 'カード', desc: '1日ずつカードに分け、晴れ・くもり・雨で淡く色分け' },
+    3: { name: 'シンプル', desc: 'Notionになじむ無地の背景と細い区切り線だけ' },
+  };
+
+  // ---- 天気の種類 ----
+  const LABEL = { 0: '快晴', 1: '晴れ', 2: '晴れ時々くもり', 3: 'くもり', 45: '霧', 48: '霧',
+    51: '霧雨', 53: '霧雨', 55: '霧雨', 56: '霧雨', 57: '霧雨', 61: '小雨', 63: '雨', 65: '大雨', 66: '冷たい雨', 67: '冷たい雨',
+    71: '小雪', 73: '雪', 75: '大雪', 77: '雪', 80: 'にわか雨', 81: 'にわか雨', 82: '激しい雨', 85: 'にわか雪', 86: 'にわか雪',
+    95: '雷雨', 96: '雷雨', 99: '雷雨' };
+  function kindOf(c) {
+    if (c <= 1) return 'sun';
+    if (c === 2) return 'partly';
+    if (c === 3) return 'cloud';
+    if (c === 45 || c === 48) return 'fog';
+    if (c >= 51 && c <= 57) return 'drizzle';
+    if (c === 65 || c === 82) return 'heavy';
+    if ((c >= 61 && c <= 67) || (c >= 80 && c <= 82)) return 'rain';
+    if ((c >= 71 && c <= 77) || c === 85 || c === 86) return 'snow';
+    if (c >= 95) return 'thunder';
+    return 'cloud';
+  }
+  const GROUP = { sun: 'sunny', partly: 'sunny', cloud: 'cloudy', fog: 'cloudy', drizzle: 'rainy', rain: 'rainy', heavy: 'rainy', snow: 'snowy', thunder: 'stormy' };
+
+  // ---- アイコン（グラデーションと影で立体的に描いたSVG） ----
+  let uid = 0;
+  // 雲の色：明るい雲〜雨雲〜雷雲（上が明るく下が暗いグラデーション）
+  const CLOUD_TONES = {
+    white: ['#ffffff', '#dfe5ee'],
+    light: ['#f3f5f8', '#c4ccd8'],
+    mid:   ['#dfe3ea', '#9ea8b8'],
+    dark:  ['#c2c9d4', '#78849a'],
+    storm: ['#a9b1bf', '#5c6678'],
+  };
+  function icon(kind, night, pop) {
+    const p = 'w' + (++uid);
+    const defs = [];
+    const use = (id, svg) => { defs.push(svg); return `url(#${p}${id})`; };
+
+    const shadow = () => use('sh', `<filter id="${p}sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.6" flood-color="#1c2540" flood-opacity=".22"/></filter>`);
+    const sun = (cx, cy, r) => {
+      const glow = use('sg', `<radialGradient id="${p}sg"><stop offset="0" stop-color="#ffd56a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd56a" stop-opacity="0"/></radialGradient>`);
+      const body = use('sb', `<radialGradient id="${p}sb" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#fff2b0"/><stop offset=".55" stop-color="#ffc93c"/><stop offset="1" stop-color="#f59e1b"/></radialGradient>`);
+      return `<circle cx="${cx}" cy="${cy}" r="${r * 1.75}" fill="${glow}"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="${body}"/>`;
+    };
+    const moon = (cx, cy, r) => {
+      const g = use('mg', `<radialGradient id="${p}mg" cx=".35" cy=".35" r=".8"><stop offset="0" stop-color="#fffbe6"/><stop offset=".6" stop-color="#f3dc8f"/><stop offset="1" stop-color="#d9b552"/></radialGradient>`);
+      defs.push(`<mask id="${p}mm"><rect width="64" height="64" fill="#fff"/><circle cx="${cx + r * .55}" cy="${cy - r * .42}" r="${r * .82}" fill="#000"/></mask>`);
+      const glow = use('mw', `<radialGradient id="${p}mw"><stop offset="0" stop-color="#fff1b8" stop-opacity=".35"/><stop offset="1" stop-color="#fff1b8" stop-opacity="0"/></radialGradient>`);
+      return `<circle cx="${cx}" cy="${cy}" r="${r * 1.6}" fill="${glow}"/>` +
+        `<g mask="url(#${p}mm)"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${g}"/>` +
+        `<circle cx="${cx - r * .35}" cy="${cy + r * .25}" r="${r * .13}" fill="#c9a548" opacity=".35"/>` +
+        `<circle cx="${cx - r * .05}" cy="${cy + r * .55}" r="${r * .09}" fill="#c9a548" opacity=".3"/></g>`;
+    };
+    // 雲：奥の雲（少し暗い）＋手前の雲（グラデーション＋影）
+    const cloud = (dx, dy, s, tone, back = true) => {
+      const [top, bottom] = CLOUD_TONES[tone];
+      const g = use('c' + tone, `<linearGradient id="${p}c${tone}" x1="0" y1="18" x2="0" y2="50" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bottom}"/></linearGradient>`);
+      const sh = '<circle cx="20" cy="38" r="9.5"/><circle cx="31" cy="29" r="12.5"/><circle cx="43" cy="32" r="9.5"/><circle cx="49" cy="40" r="7.5"/><rect x="12" y="37" width="44" height="12" rx="6"/>';
+      const backCloud = back ? `<g transform="translate(9 -7) scale(.72)" fill="${bottom}" opacity=".75"><circle cx="31" cy="30" r="12"/><circle cx="45" cy="34" r="9"/><rect x="20" y="33" width="34" height="10" rx="5"/></g>` : '';
+      return `<g transform="translate(${dx} ${dy}) scale(${s})">${backCloud}<g fill="${g}" filter="${shadow()}">${sh}</g>` +
+        `<ellipse cx="29" cy="24" rx="7" ry="3.2" fill="#fff" opacity=".45"/></g>`;
+    };
+    const dropGrad = () => use('d', `<linearGradient id="${p}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a9d3ff"/><stop offset="1" stop-color="#3f8ae6"/></linearGradient>`);
+    const drop = (x, y, s = 1.2) => `<path transform="translate(${x} ${y}) rotate(14) scale(${s})" d="M0 0 C-2.6 3.6 -3.2 5.4 -3.2 6.6 A3.2 3.2 0 0 0 3.2 6.6 C3.2 5.4 2.6 3.6 0 0Z" fill="${dropGrad()}"/>`;
+    const flake = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})" stroke="#e8f1fb" stroke-width="1.3" stroke-linecap="round">` +
+      '<line x1="0" y1="-3" x2="0" y2="3"/><line x1="-2.6" y1="-1.5" x2="2.6" y2="1.5"/><line x1="-2.6" y1="1.5" x2="2.6" y2="-1.5"/>' +
+      '<circle r="1.1" fill="#fff" stroke="#9fbbe0" stroke-width=".6"/></g>';
+
+    // 降水確率で雨・雪の量（1〜5段階）と雲の暗さを決める
+    const level = pop == null ? 3 : pop < 30 ? 1 : pop < 50 ? 2 : pop < 70 ? 3 : pop < 90 ? 4 : 5;
+    const rainTone = ['light', 'light', 'mid', 'mid', 'dark', 'dark'][level];
+    const SPOTS = [[33, 50], [24, 48], [42, 48], [29, 56], [38, 56], [19, 55], [47, 55]];
+    const COUNT = [0, 1, 2, 3, 5, 7];
+
+    let b = '';
+    switch (kind) {
+      case 'sun': b = night ? moon(31, 31, 15) : sun(32, 32, 14); break;
+      case 'partly':
+        b = (night ? moon(24, 23, 11) : sun(24, 23, 10.5)) + cloud(6, 9, .9, 'white', false); break;
+      case 'cloud': b = cloud(-1, 2, 1, 'light'); break;
+      case 'fog': {
+        const fg = use('fg', `<linearGradient id="${p}fg"><stop offset="0" stop-color="#c8d0dc" stop-opacity="0"/><stop offset=".25" stop-color="#c8d0dc"/><stop offset=".75" stop-color="#c8d0dc"/><stop offset="1" stop-color="#c8d0dc" stop-opacity="0"/></linearGradient>`);
+        b = cloud(-1, -4, 1, 'light') + `<rect x="10" y="49" width="40" height="3.2" rx="1.6" fill="${fg}"/><rect x="16" y="55" width="40" height="3.2" rx="1.6" fill="${fg}"/>`;
+        break;
+      }
+      case 'drizzle': case 'rain': case 'heavy': {
+        let lv = level;
+        if (kind === 'heavy') lv = Math.max(lv, 4);
+        if (kind === 'drizzle') lv = Math.min(lv, 2);
+        const tone = kind === 'heavy' ? 'dark' : ['light', 'light', 'mid', 'mid', 'dark', 'dark'][lv];
+        b = cloud(-1, -7, 1, tone);
+        for (let i = 0; i < COUNT[lv]; i++) b += drop(SPOTS[i][0], SPOTS[i][1] - 4, kind === 'drizzle' ? .9 : 1.2);
+        break;
+      }
+      case 'snow':
+        b = cloud(-1, -7, 1, rainTone);
+        for (let i = 0; i < COUNT[level]; i++) b += flake(SPOTS[i][0], SPOTS[i][1] - 1);
+        break;
+      case 'thunder': {
+        const bolt = use('bt', `<linearGradient id="${p}bt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a6"/><stop offset="1" stop-color="#f5a623"/></linearGradient>`);
+        b = cloud(-1, -8, 1, 'storm');
+        for (let i = 1; i < Math.min(COUNT[level], 3) + 1; i++) b += drop(SPOTS[i][0], SPOTS[i][1] - 4);
+        b += `<path d="M35 38 L27 51 H33 L30 61 L41 46 H35 L38.5 38Z" fill="${bolt}" filter="${shadow()}"/>`;
+        break;
+      }
+    }
+    return `<svg viewBox="0 0 64 64" aria-hidden="true"><defs>${[...new Set(defs)].join('')}</defs>${b}</svg>`;
+  }
+  const dropIcon = '<svg viewBox="0 0 10 10"><path d="M5 0.5 C2.6 3.6 2 5.2 2 6.4 A3 3 0 0 0 8 6.4 C8 5.2 7.4 3.6 5 0.5Z" fill="currentColor"/></svg>';
+
+  function message(kind, max, pop) {
+    if (kind === 'thunder') return '雷に注意';
+    if (kind === 'snow') return '雪の可能性があります';
+    if (pop >= 50 || GROUP[kind] === 'rainy') return '傘があると安心です';
+    if (max >= 30) return 'こまめな水分補給を';
+    if (max <= 10) return '暖かい服装で';
+    if (GROUP[kind] === 'sunny') return 'おでかけ日和です';
+    return '';
+  }
+
+  // ---- データ取得（Open-Meteo：登録・キー不要。送るのは座標だけ） ----
+  let data = null, failed = false;
+  const widgets = [];
+  async function load() {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + PLACE.lat + '&longitude=' + PLACE.lon +
+      '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day' +
+      '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max' +
+      '&timezone=Asia%2FTokyo&forecast_days=7';
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(r.status);
+      data = await r.json(); failed = false;
+    } catch (e) { failed = true; }
+    widgets.forEach(render);
+  }
+
+  const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+  const rnd = v => (v == null ? '–' : Math.round(v));
+  function render(w) {
+    const el = w.el;
+    if (!data) {
+      el.innerHTML = '<div class="wrap" style="display:flex;align-items:center;justify-content:center"><div class="meta">' +
+        PLACE.name + '　' + (failed ? '天気を取得できませんでした' : '天気を読み込み中…') + '</div></div>';
+      return;
+    }
+    const c = data.current, d = data.daily;
+    const kind = kindOf(c.weather_code), night = !c.is_day;
+    el.dataset.g = night && GROUP[kind] === 'sunny' ? 'night' : GROUP[kind];
+    const pop0 = d.precipitation_probability_max[0];
+    const gNow = el.dataset.g;
+
+    let days = '';
+    for (let i = 0; i < d.time.length; i++) {
+      const dt = new Date(d.time[i] + 'T00:00:00');
+      const k = kindOf(d.weather_code[i]);
+      const label = i === 0 ? '今日' : i === 1 ? '明日' : DOW[dt.getDay()];
+      const cls = dt.getDay() === 0 ? ' sun' : dt.getDay() === 6 ? ' sat' : '';
+      const pop = d.precipitation_probability_max[i];
+      days += `<div class="day card g-${GROUP[k]}${i === 0 ? ' today' : ''}" title="${LABEL[d.weather_code[i]] || ''}">` +
+        `<div class="dl${cls}">${label}</div><div class="dd">${dt.getMonth() + 1}/${dt.getDate()}</div>` +
+        `<div class="ico">${icon(k, false, pop)}</div>` +
+        `<div class="t"><span class="hi">${rnd(d.temperature_2m_max[i])}°</span><span class="lo">${rnd(d.temperature_2m_min[i])}°</span></div>` +
+        `<div class="pop">${dropIcon}${pop == null ? '–' : pop + '%'}</div></div>`;
+    }
+
+    el.innerHTML = '<div class="wrap">' +
+      `<div class="now card g-${gNow}">` +
+        `<div class="place">${PLACE.name}</div>` +
+        `<div class="now-main"><div class="big">${icon(kind, night, pop0)}</div>` +
+          `<div><div class="temp">${rnd(c.temperature_2m)}<small>°C</small></div><div class="desc">${LABEL[c.weather_code] || ''}</div></div></div>` +
+        `<div class="hl"><span>最高 <span class="hi">${rnd(d.temperature_2m_max[0])}°</span></span><span>最低 <span class="lo">${rnd(d.temperature_2m_min[0])}°</span></span></div>` +
+        `<div class="meta">体感 ${rnd(c.apparent_temperature)}°　湿度 ${rnd(c.relative_humidity_2m)}%　降水 ${pop0 == null ? '–' : pop0 + '%'}</div>` +
+        (message(kind, d.temperature_2m_max[0], pop0 || 0) ? `<div class="msg">${message(kind, d.temperature_2m_max[0], pop0 || 0)}</div>` : '') +
+      '</div>' +
+      `<div class="week">${days}</div></div>`;
+  }
+
+  // ---- テーマ（auto は端末の設定に合わせる） ----
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const isDark = t => t === 'dark' || (t === 'auto' && mq.matches);
+  function applyTheme() {
+    widgets.forEach(w => w.el.classList.toggle('dark', isDark(w.theme)));
+    document.body.classList.toggle('dark', isDark(document.body.dataset.theme || 'auto'));
+  }
+  mq.addEventListener('change', applyTheme);
+
+  function mount(parent, style, theme) {
+    const el = document.createElement('div');
+    el.className = 'ww s' + style;
+    parent.appendChild(el);
+    const w = { el, theme };
+    widgets.push(w);
+    render(w);
+  }
+
+  const theme = ['dark', 'light', 'auto'].includes(params.get('theme')) ? params.get('theme') : 'auto';
+  if (params.get('style')) {
+    document.body.dataset.theme = theme;
+    mount(document.body, STYLES[params.get('style')] ? params.get('style') : 1, theme);
+  } else {
+    document.body.dataset.theme = 'auto';
+    const g = document.createElement('div');
+    g.className = 'gallery';
+    g.innerHTML = '<h1>天気ウィジェット — パターン選択</h1><p class="lead">今日の天気と1週間の予報です。気に入ったパターンの「URLをコピー」を押して、Notion の <b>/embed</b> に貼り付けてください。' +
+      '<br>天気は Open-Meteo から取得しています（送信するのは' + PLACE.name + 'の座標だけです）。埋め込む枠の幅に合わせて並び方が変わります。</p>';
+    document.body.appendChild(g);
+    const base = location.href.split('?')[0].split('#')[0];
+    for (const id of Object.keys(STYLES)) {
+      const sec = document.createElement('section');
+      sec.className = 'pattern';
+      sec.innerHTML = '<h2>パターン' + id + '：' + STYLES[id].name + '</h2><p>' + STYLES[id].desc + '</p>';
+      const row = document.createElement('div'); row.className = 'row';
+      for (const t of ['light', 'dark']) {
+        const cell = document.createElement('div'); cell.className = 'cell';
+        const box = document.createElement('div'); box.className = 'box';
+        cell.appendChild(box);
+        mount(box, id, t);
+        const url = base + '?style=' + id + '&theme=' + t;
+        const bar = document.createElement('div'); bar.className = 'bar';
+        bar.innerHTML = '<span>' + (t === 'dark' ? 'ダーク' : 'ライト') + '</span><code></code><button type="button">URLをコピー</button>';
+        bar.querySelector('code').textContent = '?style=' + id + '&theme=' + t;
+        bar.querySelector('button').onclick = async (e) => {
+          try { await navigator.clipboard.writeText(url); e.target.textContent = 'コピーしました'; }
+          catch { prompt('このURLをコピーしてください', url); }
+        };
+        cell.appendChild(bar); row.appendChild(cell);
+      }
+      sec.appendChild(row); g.appendChild(sec);
+    }
+    // アイコン見本（降水確率による雨・雪の量の違い）
+    const demo = document.createElement('section');
+    demo.className = 'pattern';
+    const item = (svg, label) => `<div class="sample">${svg}<span>${label}</span></div>`;
+    let h = '<h2>アイコン見本</h2><p>雨と雪は降水確率が高いほど粒が増え、雲も暗くなります。</p><div class="samples">';
+    h += item(icon('sun', false), '晴れ') + item(icon('sun', true), '晴れ（夜）') + item(icon('partly', false), '晴れ時々くもり') +
+      item(icon('partly', true), '晴れ時々くもり（夜）') + item(icon('cloud', false), 'くもり') + item(icon('fog', false), '霧') +
+      item(icon('thunder', false, 80), '雷雨') + '</div><div class="samples">';
+    for (const pp of [20, 40, 60, 80, 100]) h += item(icon('rain', false, pp), '雨 ' + pp + '%');
+    h += '</div><div class="samples">';
+    for (const pp of [20, 40, 60, 80, 100]) h += item(icon('snow', false, pp), '雪 ' + pp + '%');
+    demo.innerHTML = h + '</div>';
+    g.appendChild(demo);
+  }
+  applyTheme();
+  load();
+  setInterval(load, 30 * 60 * 1000); // 30分ごとに更新
+})();
+</script>
+</body>
+</html>

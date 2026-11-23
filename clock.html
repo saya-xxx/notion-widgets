@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アナログ時計</title>
+<style>
+  :root {
+    --bg: #f7f6f3; --face: #ffffff; --ink: #2b2b2b; --sub: #8a8780; --tick: #c9c6bf;
+    --accent: #d9452b; --card: #ffffff; --line: #e6e3dc;
+  }
+  .theme-dark {
+    --bg: #191919; --face: #242424; --ink: #ececea; --sub: #9b9a97; --tick: #555452;
+    --accent: #ff6a4d; --card: #202020; --line: #333;
+  }
+  @media (prefers-color-scheme: dark) {
+    .theme-auto {
+      --bg: #191919; --face: #242424; --ink: #ececea; --sub: #9b9a97; --tick: #555452;
+      --accent: #ff6a4d; --card: #202020; --line: #333;
+    }
+  }
+  .theme-light {
+    --bg: #f7f6f3; --face: #ffffff; --ink: #2b2b2b; --sub: #8a8780; --tick: #c9c6bf;
+    --accent: #d9452b; --card: #ffffff; --line: #e6e3dc;
+  }
+  /* パターンごとの差し色 */
+  .s3 { --accent: #c0392b; --hand: #8c6d3f; }
+  .s3.theme-dark { --hand: #d6b47a; }
+  .s4 { --accent: #2f7de1; }
+  .s4.theme-dark { --accent: #5aa2ff; }
+  @media (prefers-color-scheme: dark) { .s3.theme-auto { --hand: #d6b47a; } .s4.theme-auto { --accent: #5aa2ff; } }
+
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+  }
+
+  /* ---- ウィジェット本体 ---- */
+  .widget { background: var(--bg); color: var(--ink); width: 100%; height: 100%; container-type: size; }
+  .inner {
+    display: flex; align-items: center; justify-content: center;
+    gap: 6cqw; padding: 4cqh 4cqw; width: 100%; height: 100%;
+  }
+  .widget svg.clock { height: min(92cqh, 52cqw); width: auto; aspect-ratio: 1; flex: none; }
+  .info { display: flex; flex-direction: column; gap: 0.35em; font-size: clamp(11px, 4.2cqw, 22px); min-width: 0; }
+  .digital { font-size: 2.3em; font-weight: 600; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .date { color: var(--sub); }
+  /* 縦長のときは縦に並べる */
+  @container (max-aspect-ratio: 1/1) {
+    .inner { flex-direction: column; gap: 3cqh; }
+    .widget svg.clock { height: min(58cqh, 88cqw); }
+    .info { align-items: center; text-align: center; font-size: clamp(11px, 5cqw, 22px); }
+  }
+
+  .face { fill: var(--face); stroke: var(--line); stroke-width: 1.5; }
+  .tick { stroke: var(--tick); stroke-linecap: round; }
+  .tick.h { stroke: var(--ink); }
+  .num { fill: var(--ink); font-size: 11px; text-anchor: middle; dominant-baseline: central; font-weight: 500; }
+  .hand { stroke: var(--hand, var(--ink)); stroke-linecap: round; fill: var(--hand, var(--ink)); }
+  .sec { stroke: var(--accent); fill: var(--accent); stroke-linecap: round; }
+  .dot { fill: var(--tick); }
+  .dot.h { fill: var(--ink); }
+
+  /* ---- パターン選択ページ ---- */
+  .gallery { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; }
+  .gallery h1 { font-size: 22px; margin-bottom: 6px; }
+  .gallery .lead { color: var(--sub); font-size: 14px; margin-bottom: 28px; line-height: 1.7; }
+  .pattern { margin-bottom: 36px; }
+  .pattern h2 { font-size: 17px; margin-bottom: 4px; }
+  .pattern p { color: var(--sub); font-size: 13px; margin-bottom: 12px; }
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .cell { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); }
+  .cell .box { height: 200px; }
+  .cell .meta { padding: 10px 12px; font-size: 12px; display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--line); }
+  .cell code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--sub); }
+  .cell button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+</style>
+</head>
+<body>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+
+  const STYLES = {
+    1: { name: 'クラシック', desc: '数字と分目盛りのある定番の文字盤', shape: 'circle', numerals: 'arabic', minuteTicks: true, hands: 'taper', secTail: true },
+    2: { name: 'ミニマル', desc: '数字なし・細い目盛りだけのすっきりした文字盤', shape: 'circle', numerals: 'none', minuteTicks: false, hands: 'slim', secTail: false },
+    3: { name: '和風', desc: '漢数字の文字盤。金茶の針と朱色の秒針', shape: 'circle', numerals: 'kanji', minuteTicks: false, hands: 'taper', secTail: true, noMarks: true },
+    4: { name: 'モダン', desc: '角丸の四角い文字盤。太めの丸い針', shape: 'square', numerals: 'quarters', minuteTicks: false, hands: 'bold', secTail: false, dots: true },
+  };
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const KANJI = ['十二','一','二','三','四','五','六','七','八','九','十','十一'];
+
+  function buildClock(styleId) {
+    const s = STYLES[styleId] || STYLES[1];
+    const svg = el('svg', { viewBox: '0 0 120 120', class: 'clock', 'aria-label': 'アナログ時計' });
+    if (s.shape === 'square') el('rect', { x: 4, y: 4, width: 112, height: 112, rx: 26, class: 'face' }, svg);
+    else el('circle', { cx: 60, cy: 60, r: 56, class: 'face' }, svg);
+
+    for (let i = 0; i < 60; i++) {
+      if (s.noMarks) break;
+      const isHour = i % 5 === 0;
+      const a = i * 6 * Math.PI / 180;
+      const sin = Math.sin(a), cos = -Math.cos(a);
+      if (s.dots) {
+        if (!isHour) continue;
+        const r = s.shape === 'square' ? 47 : 50;
+        if (s.numerals === 'quarters' && i % 15 === 0) continue;
+        el('circle', { cx: 60 + sin * r, cy: 60 + cos * r, r: s.numerals === 'kanji' ? 1.3 : 1.8, class: 'dot h' }, svg);
+        continue;
+      }
+      if (!isHour && !s.minuteTicks) continue;
+      const r1 = 52, r2 = isHour ? (s.numerals === 'none' ? 45 : 47) : 50;
+      el('line', { x1: 60 + sin * r1, y1: 60 + cos * r1, x2: 60 + sin * r2, y2: 60 + cos * r2,
+        class: 'tick' + (isHour ? ' h' : ''), 'stroke-width': isHour ? (s.numerals === 'none' ? 1.6 : 1.4) : 0.6 }, svg);
+    }
+
+    for (let h = 0; h < 12; h++) {
+      let label = null;
+      if (s.numerals === 'arabic') label = String(h === 0 ? 12 : h);
+      if (s.numerals === 'kanji') label = KANJI[h];
+      if (s.numerals === 'quarters' && h % 3 === 0) label = String(h === 0 ? 12 : h);
+      if (!label) continue;
+      const a = h * 30 * Math.PI / 180;
+      const r = s.numerals === 'kanji' ? 45 : s.numerals === 'quarters' ? 45 : 40;
+      const t = el('text', { x: 60 + Math.sin(a) * r, y: 60 - Math.cos(a) * r, class: 'num' }, svg);
+      if (s.numerals === 'kanji') t.setAttribute('font-size', label.length > 1 ? 7 : 9.5);
+      if (s.numerals === 'quarters') t.setAttribute('font-size', 13);
+      t.textContent = label;
+    }
+
+    const W = { taper: [3.2, 2.2, 0.9], slim: [2, 1.4, 0.7], bold: [5, 3.6, 1.4] }[s.hands];
+    const hour = el('line', { x1: 60, y1: 64, x2: 60, y2: 32, 'stroke-width': W[0], class: 'hand' }, svg);
+    const min = el('line', { x1: 60, y1: 65, x2: 60, y2: 16, 'stroke-width': W[1], class: 'hand' }, svg);
+    const sec = el('g', {}, svg);
+    el('line', { x1: 60, y1: s.secTail ? 72 : 60, x2: 60, y2: 13, 'stroke-width': W[2], class: 'sec' }, sec);
+    el('circle', { cx: 60, cy: 60, r: s.hands === 'bold' ? 3.2 : 2.4, class: 'sec' }, svg);
+    el('circle', { cx: 60, cy: 60, r: 0.9, fill: 'var(--face)' }, svg);
+    return { svg, hour, min, sec };
+  }
+
+  // ---- ウィジェット組み立て ----
+  const clocks = [];
+  function mountWidget(parent, styleId, theme) {
+    const w = document.createElement('div');
+    w.className = 'widget s' + styleId + ' theme-' + theme;
+    const inner = document.createElement('div');
+    inner.className = 'inner';
+    w.appendChild(inner);
+    const c = buildClock(styleId);
+    inner.appendChild(c.svg);
+    const info = document.createElement('div');
+    info.className = 'info';
+    info.innerHTML = '<div class="digital"></div><div class="date"></div>';
+    inner.appendChild(info);
+    parent.appendChild(w);
+    c.digital = info.querySelector('.digital');
+    c.date = info.querySelector('.date');
+    clocks.push(c);
+  }
+
+  const DOW = ['日', '月', '火', '水', '木', '金', '土'];
+  const pad = n => String(n).padStart(2, '0');
+  let lastMinute = -1;
+  function tick() {
+    const now = new Date();
+    const ms = now.getMilliseconds(), s = now.getSeconds() + ms / 1000;
+    const m = now.getMinutes() + s / 60, h = (now.getHours() % 12) + m / 60;
+    const txt = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    const dt = (now.getMonth() + 1) + '月' + now.getDate() + '日（' + DOW[now.getDay()] + '）';
+    for (const c of clocks) {
+      c.hour.setAttribute('transform', 'rotate(' + h * 30 + ' 60 60)');
+      c.min.setAttribute('transform', 'rotate(' + m * 6 + ' 60 60)');
+      c.sec.setAttribute('transform', 'rotate(' + s * 6 + ' 60 60)');
+      if (now.getMinutes() !== lastMinute) { c.digital.textContent = txt; c.date.textContent = dt; }
+    }
+    lastMinute = now.getMinutes();
+    requestAnimationFrame(tick);
+  }
+
+  const theme = ['dark', 'light', 'auto'].includes(params.get('theme')) ? params.get('theme') : 'auto';
+  if (params.get('style')) {
+    // 埋め込み用：ウィジェット1つだけ表示
+    document.body.className = 'theme-' + theme;
+    mountWidget(document.body, STYLES[params.get('style')] ? params.get('style') : 1, theme);
+  } else {
+    // パターン選択ページ
+    document.body.className = 'theme-auto';
+    const g = document.createElement('div');
+    g.className = 'gallery';
+    g.innerHTML = '<h1>時計ウィジェット — パターン選択</h1><p class="lead">気に入ったパターンの「URLをコピー」を押して、Notion の <b>/embed</b> に貼り付けてください。' +
+      '時計はブラウザの中だけで動き、外部とは通信しません。' +
+      '<br>テーマは dark（ダーク）、light（ライト）、auto（端末の設定に合わせる）の3種類です。</p>';
+    document.body.appendChild(g);
+    const base = location.href.split('?')[0].split('#')[0];
+    for (const id of Object.keys(STYLES)) {
+      const sec = document.createElement('section');
+      sec.className = 'pattern';
+      sec.innerHTML = '<h2>パターン' + id + '：' + STYLES[id].name + '</h2><p>' + STYLES[id].desc + '</p>';
+      const row = document.createElement('div'); row.className = 'row';
+      for (const t of ['dark', 'light']) {
+        const cell = document.createElement('div'); cell.className = 'cell';
+        const box = document.createElement('div'); box.className = 'box';
+        cell.appendChild(box);
+        mountWidget(box, id, t);
+        const url = base + '?style=' + id + '&theme=' + t;
+        const meta = document.createElement('div'); meta.className = 'meta';
+        meta.innerHTML = '<span>' + (t === 'dark' ? 'ダーク' : 'ライト') + '</span><code></code><button type="button">URLをコピー</button>';
+        meta.querySelector('code').textContent = '?style=' + id + '&theme=' + t;
+        meta.querySelector('button').onclick = async (e) => {
+          try { await navigator.clipboard.writeText(url); e.target.textContent = 'コピーしました'; }
+          catch { prompt('このURLをコピーしてください', url); }
+        };
+        cell.appendChild(meta); row.appendChild(cell);
+      }
+      sec.appendChild(row); g.appendChild(sec);
+    }
+  }
+
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
