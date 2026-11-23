@@ -78,11 +78,12 @@
   .s3 .desc { color: var(--ink); font-weight: 600; font-size: .85em; text-align: center; }
   .s3 .hl, .s3 .meta, .s3 .msg { display: none; }
   .s3 .week { flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
-  .s3 .day { padding: 0; gap: .55em; font-size: clamp(11px, 1.45cqw, 14px); }
+  .s3 .day { padding: 0; gap: .45em; font-size: clamp(11px, 1.45cqw, 14px); }
   .s3 .day.today { outline: none; }
   .s3 .day .dl { font-size: 1em; font-weight: 700; }
   .s3 .day .dl.sun, .s3 .day .dl.sat { color: var(--ink); }
-  .s3 .day .dd, .s3 .day .pop { display: none; }
+  .s3 .day .dd { display: none; }
+  .s3 .day .pop { font-size: .85em; margin-top: -.15em; }
   .s3 .day .ico svg { width: clamp(24px, 3cqw, 32px); }
   .s3 .day .t { flex-direction: column; gap: .15em; line-height: 1.25; }
   .s3 .day .t .hi, .s3 .day .t .lo { color: var(--ink); font-weight: 600; }
