@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>縦のものさし時計</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#191919}body{display:flex;align-items:center;justify-content:center;font-family:Georgia,'Times New Roman',serif}svg{display:block;width:100%;height:100%;max-width:420px} .caption{fill:#dcd5c7;font-size:13px;letter-spacing:3px}.tick{stroke:#827866;stroke-width:.7}.number{fill:#4c453b;font-size:10px;font-variant-numeric:tabular-nums}.marker{fill:#302d27;stroke:#302d27}.time{fill:#f1eadc;font-size:25px;letter-spacing:3px;font-variant-numeric:tabular-nums}.date{fill:#aca99f;font:10px system-ui,sans-serif;letter-spacing:1px}
+</style>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 240" role="img" aria-label="日本時間のものさし時計">
+<defs><linearGradient id="paper" x2="1" y2="0"><stop stop-color="#d9cfbd"/><stop offset=".15" stop-color="#f1e8d7"/><stop offset=".85" stop-color="#e9dfcd"/><stop offset="1" stop-color="#cbbfa9"/></linearGradient><filter id="shadow" x="-20%" y="-10%" width="150%" height="130%"><feDropShadow dx="1" dy="3" stdDeviation="2" flood-opacity=".28"/></filter></defs>
+<g id="rulers"></g>
+<text id="time" class="time" x="180" y="214" text-anchor="middle">--:--:--</text>
+<text id="date" class="date" x="180" y="234" text-anchor="middle"></text>
+</svg>
+<script>
+(()=>{
+ 'use strict';
+ const ns='http://www.w3.org/2000/svg', root=document.getElementById('rulers');
+ const make=(tag,attrs,parent)=>{const el=document.createElementNS(ns,tag);for(const [key,value]of Object.entries(attrs))el.setAttribute(key,value);parent.appendChild(el);return el;};
+ const top=45,bottom=176,travel=bottom-top,markers=[];
+ const scales=[{x:45,max:24,major:6,label:'H'},{x:146,max:60,major:10,label:'M'},{x:247,max:60,major:10,label:'S'}];
+ for(const scale of scales){
+  const g=make('g',{},root),label=make('text',{x:scale.x+34,y:21,'text-anchor':'middle',class:'caption'},g);label.textContent=scale.label;
+  make('rect',{x:scale.x,y:31,width:68,height:158,rx:4,fill:'url(#paper)',filter:'url(#shadow)'},g);
+  make('line',{x1:scale.x+12,y1:top,x2:scale.x+12,y2:bottom,stroke:'#a39782','stroke-width':'.6'},g);
+  for(let value=0;value<=scale.max;value++){
+   const y=bottom-value/scale.max*travel,major=value%scale.major===0,mid=value%5===0;
+   make('line',{x1:scale.x+12,y1:y,x2:scale.x+(major?29:mid?24:19),y2:y,class:'tick'},g);
+   if(major){const text=make('text',{x:scale.x+44,y:y+3.2,'text-anchor':'middle',class:'number'},g);text.textContent=String(value).padStart(2,'0');}
+  }
+  const marker=make('g',{'data-unit':scale.label,class:'marker'},g);
+  make('rect',{x:scale.x+6,y:-1.3,width:49,height:2.6,rx:1.3},marker);
+  make('path',{d:`M ${scale.x+55} -3.5 L ${scale.x+61} 0 L ${scale.x+55} 3.5 Z`,stroke:'none'},marker);
+  markers.push(marker);
+ }
+ const formatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+ const dateFormatter=new Intl.DateTimeFormat('ja-JP',{timeZone:'Asia/Tokyo',month:'long',day:'numeric',weekday:'short'});
+ const timeEl=document.getElementById('time'),dateEl=document.getElementById('date'),svg=document.querySelector('svg');let lastSecond='';
+ function render(){
+  const now=new Date(),parts=Object.fromEntries(formatter.formatToParts(now).map(p=>[p.type,p.value]));
+  const h=Number(parts.hour),m=Number(parts.minute),s=Number(parts.second),fraction=now.getMilliseconds()/1000;
+  const values=[h+m/60+s/3600,m+(s+fraction)/60,s+fraction];
+  markers.forEach((marker,i)=>marker.setAttribute('transform',`translate(0 ${bottom-values[i]/scales[i].max*travel})`));
+  const text=`${parts.hour}:${parts.minute}:${parts.second}`;
+  if(text!==lastSecond){timeEl.textContent=text;dateEl.textContent=dateFormatter.format(now);svg.setAttribute('aria-label',`日本時間 ${h}時${m}分${s}秒`);lastSecond=text;}
+ }
+ render();setInterval(render,50);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
+})();
+</script>
+</body>
+</html>
