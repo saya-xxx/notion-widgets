@@ -182,14 +182,14 @@
 
 /* 5: current weather beside a true hourly temperature/rain chart */
 .ww.s5{align-items:stretch;padding:0 2px;overflow:auto}
-.s5 .wrap{height:100%;min-height:280px;grid-template-rows:minmax(178px,1fr) 92px;padding:14px 20px;gap:9px;align-content:stretch}
+.s5 .wrap{height:100%;max-height:320px;min-height:280px;grid-template-rows:minmax(178px,1fr) 92px;padding:14px 20px;gap:9px;align-content:stretch}
 .s5 .overview{display:grid;grid-template-columns:minmax(220px,.85fr) minmax(0,1.55fr);gap:18px;min-height:0;align-items:center}
 .s5 .current{align-self:stretch;display:flex;flex-direction:column;justify-content:center;gap:18px;border-right:1px solid #696b5b;padding-right:15px;min-width:0}
 .s5 .current-place{font-size:16px;color:#e7e7d8;letter-spacing:.06em}
 .s5 .current-info{display:flex;align-items:center;gap:10px;min-width:0}.s5 .current-icon{width:68px;flex:none}.s5 .current-icon svg{display:block;width:100%}
 .s5 .current-temp{font:42px Georgia,'Times New Roman',serif;color:#f3eddf;line-height:1.1}.s5 .current-temp small{font-size:23px}
 .s5 .current-pop{font-size:13px;color:#d6e2e7;white-space:nowrap;margin-top:8px}.s5 .current-range{font-size:11px;color:#c5c5b5;white-space:nowrap;margin-top:9px}
-.s5 .hourly{min-width:0;width:100%}.s5 .chart-heading{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#e4e4d4;margin-bottom:5px}.s5 .chart-key{display:flex;gap:10px;color:#bdc8b8;font-size:10px;white-space:nowrap}.s5 .chart-key span:last-child{color:#92bdd1}.s5 .hourly svg{display:block;width:100%;height:auto;max-height:205px;font-family:system-ui,sans-serif}.s5 .week{border-top:1px solid #696b5b;padding-top:6px}.s5 .day .ico svg{width:32px}.s5 .day .dl{font-size:12px}.s5 .day .t{font-size:11px}
+.s5 .hourly{min-width:0;width:100%}.s5 .chart-heading{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:#e4e4d4;margin-bottom:5px}.s5 .chart-key{display:flex;gap:10px;color:#bdc8b8;font-size:10px;white-space:nowrap}.s5 .chart-key span:last-child{color:#92bdd1}.s5 .hourly svg{display:block;width:100%;height:auto;max-height:150px;font-family:system-ui,sans-serif}.s5 .week{border-top:1px solid #696b5b;padding-top:6px}.s5 .day .ico svg{width:32px}.s5 .day .dl{font-size:12px}.s5 .day .t{font-size:11px}
 .s5 .weather-note{font-size:11px;color:#c5c5b5;text-align:center;padding:15px}
 @container(max-width:740px){.s5 .wrap{padding:12px;grid-template-rows:minmax(165px,1fr) 86px;min-height:275px}.s5 .overview{grid-template-columns:minmax(180px,.85fr) minmax(0,1.35fr);gap:12px}.s5 .current{padding-right:10px;gap:14px}.s5 .current-icon{width:50px}.s5 .current-temp{font-size:34px}.s5 .current-temp small{font-size:20px}.s5 .current-pop{font-size:11px}.s5 .current-range{font-size:10px}.s5 .chart-heading{font-size:11px;flex-wrap:wrap}.s5 .chart-key{font-size:9px}.s5 .day .ico svg{width:27px}.s5 .day .t{font-size:10px}}
 @container(max-width:480px){.s5 .wrap{height:auto;min-height:100%;grid-template-rows:auto 85px}.s5 .overview{grid-template-columns:1fr;gap:12px}.s5 .current{border-right:0;border-bottom:1px solid #696b5b;padding:0 0 12px;gap:8px}.s5 .current-info{justify-content:center}.s5 .hourly svg{max-height:none}.s5 .day .t{flex-direction:column}.s5 .day .dl{font-size:10px}}
@@ -360,7 +360,7 @@
     if (!temps.length && points.every(p=>p.p===null)) return '<p class="weather-note">時間別予報は未取得です</p>';
     const low=temps.length?Math.floor((Math.min(...temps)-2)/5)*5:0;
     const high=temps.length?Math.max(low+10,Math.ceil((Math.max(...temps)+2)/5)*5):20;
-    const left=42,right=510,top=30,bottom=156;
+    const left=42,right=510,top=30,bottom=108;
     const x=i=>left+(right-left)*i/(points.length-1),yT=t=>bottom-(t-low)/(high-low)*(bottom-top),yP=p=>bottom-p/100*(bottom-top);
     let lines='',bars='',dots='',labels='',path='',connected=false;
     for(let i=0;i<3;i++){
@@ -368,11 +368,11 @@
       lines+=`<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" stroke="#53594d" stroke-width=".6"/><text x="${left-8}" y="${y+4}" text-anchor="end" fill="#c4c8b7" font-size="12">${rnd(temp)}°</text><text x="${right+8}" y="${y+4}" fill="#9fbac6" font-size="12">${i*50}%</text>`;
     }
     points.forEach((p,i)=>{
-      labels+=`<text x="${x(i)}" y="181" text-anchor="middle" fill="#deded0" font-size="12">${p.hour}時</text>`;
+      labels+=`<text x="${x(i)}" y="132" text-anchor="middle" fill="#deded0" font-size="12">${p.hour}時</text>`;
       if(p.p!==null){const yy=yP(p.p);bars+=`<rect x="${x(i)-20}" y="${yy}" width="40" height="${bottom-yy}" rx="2" fill="#72a8c2" fill-opacity=".52"><title>${p.hour}時 降水確率 ${p.p}%</title></rect><text x="${x(i)}" y="${Math.max(top+12,yy-5)}" text-anchor="middle" fill="#8fc2d9" font-size="10">${p.p}%</text>`;}
       if(p.t!==null){const yy=yT(p.t);path+=(connected?' L ':' M ')+x(i)+' '+yy;connected=true;dots+=`<circle cx="${x(i)}" cy="${yy}" r="4" fill="#b3d49e"><title>${p.hour}時 気温 ${rnd(p.t)}℃</title></circle><text x="${x(i)}" y="${Math.max(15,yy-12)}" text-anchor="middle" fill="#e0ead4" font-size="12">${rnd(p.t)}°</text>`;}else connected=false;
     });
-    return '<div class="chart-heading"><span>今日の気温と降水確率</span><div class="chart-key"><span>━ 気温</span><span>▥ 降水確率</span></div></div>'+`<svg viewBox="0 0 560 190" role="img" aria-label="${date} 6時から21時の気温と降水確率。気温は左軸、降水確率は右軸"><title>時間別予報：気温は折れ線、降水確率は棒グラフ</title>${lines}${bars}<path d="${path}" fill="none" stroke="#b3d49e" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+    return '<div class="chart-heading"><span>今日の気温と降水確率</span><div class="chart-key"><span>━ 気温</span><span>▥ 降水確率</span></div></div>'+`<svg viewBox="0 0 560 140" role="img" aria-label="${date} 6時から21時の気温と降水確率。気温は左軸、降水確率は右軸"><title>時間別予報：気温は折れ線、降水確率は棒グラフ</title>${lines}${bars}<path d="${path}" fill="none" stroke="#b3d49e" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
   }
   function render(w) {
     const el = w.el;
