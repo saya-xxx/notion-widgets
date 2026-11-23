@@ -58,8 +58,6 @@
   /* パターン3：シンプル（Notionになじむ無地） */
   .s3 { --bg: #ffffff; }
   .s3.dark { --bg: #191919; }
-  .s3 .now { border-right: 1px solid var(--line); border-radius: 0; }
-  .s3 .day + .day { border-left: 1px solid var(--line); border-radius: 0; }
 
   /* ---- レイアウト ---- */
   .wrap {
@@ -156,7 +154,7 @@
   const STYLES = {
     1: { name: 'グラデーション', desc: '今日の天気に合わせて背景の色がうっすら変わる' },
     2: { name: 'カード', desc: '1日ずつカードに分け、晴れ・くもり・雨で淡く色分け' },
-    3: { name: 'シンプル', desc: 'Notionになじむ無地の背景と細い区切り線だけ' },
+    3: { name: 'シンプル', desc: 'Notionになじむ無地の背景。区切り線なし' },
   };
 
   // ---- 天気の種類 ----
