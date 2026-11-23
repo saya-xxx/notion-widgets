@@ -168,6 +168,18 @@
   .sample { width: 104px; padding: 10px 6px; border-radius: 12px; border: 1px solid rgba(127,127,127,.25); text-align: center; font-size: 11px; opacity: .95; }
   .sample svg { width: 64px; height: 64px; display: block; margin: 0 auto 4px; }
   .cell button { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(127,127,127,.35); background: transparent; color: inherit; cursor: pointer; }
+
+/* 4: ruler clock companion, horizontal weekly card */
+.ww.s4{--bg:#191919;--ink:#eee8dc;--sub:#b9b6a7;--hi:#e9dfc8;--lo:#b2c0bd;--pop:#b2c4cf;display:flex;align-items:center;overflow:hidden;padding:0 2px}
+.s4 .wrap{width:100%;height:204px;min-height:0;display:grid;grid-template-columns:1fr;grid-template-rows:100px 1fr;padding:10px 18px;gap:0;border:1px solid #777b68;border-radius:12px;background:#23251f}
+.s4 .now{max-width:none;display:grid;grid-template-columns:1fr auto auto;align-items:center;column-gap:24px;padding:0 0 10px;position:relative;border-radius:0;border-bottom:1px solid #696b5b;font-size:13px}
+.s4 .place{grid-column:1/-1;position:absolute;left:0;top:0;font-size:12px;letter-spacing:1px;color:#d5dac7}.s4 .place::before{background:#b8c5a4}.s4 .pl-sub{display:none}
+.s4 .now-main{grid-column:1;gap:8px;padding-top:16px}.s4 .now-main .big{width:57px}.s4 .temp{font:42px Georgia,serif;color:#f3eddf}.s4 .temp small{font-size:20px;vertical-align:top;color:inherit}.s4 .desc,.s4 .msg{display:none}
+.s4 .hl{display:flex;flex-direction:column;gap:7px;font-size:12px;white-space:nowrap;padding-top:10px}.s4 .meta{display:block!important;white-space:nowrap;border-left:1px solid #696b5b;padding:12px 0 12px 20px;font-size:13px;color:#c7d2d6}
+.s4 .week{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;justify-content:stretch;align-items:center}.s4 .day{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:5px 0 0;font-size:11px;border-radius:0}.s4 .day .dl{width:auto;font-size:12px;color:#e7e5d9}.s4 .day .dd,.s4 .day .pop{display:none}.s4 .day .ico svg{width:30px}.s4 .day .t{display:flex;flex-direction:row;gap:5px;font-size:10px;white-space:nowrap}.s4 .day + .day{border:0}.s4 .day.today{outline:none}
+@container(max-width:620px){.s4 .wrap{height:190px;padding:10px 12px;grid-template-rows:91px 1fr}.s4 .now{column-gap:10px}.s4 .now-main .big{width:44px}.s4 .temp{font-size:35px}.s4 .hl{font-size:11px}.s4 .meta{font-size:11px;padding-left:10px}.s4 .day .ico svg{width:26px}.s4 .day .dl{font-size:11px}.s4 .day .t{font-size:9px;gap:3px}}
+@container(max-width:420px){.s4 .wrap{height:210px;grid-template-rows:100px 1fr}.s4 .now{grid-template-columns:1fr auto}.s4 .meta{display:none!important}.s4 .week{grid-template-columns:repeat(6,minmax(0,1fr))}.s4 .day .t{flex-direction:column;gap:0}.s4 .day .dl{font-size:10px}.s4 .day .ico svg{width:24px}}
+
 </style>
 </head>
 <body>
@@ -184,6 +196,7 @@
     1: { name: 'グラデーション', desc: '今日の天気に合わせて背景の色がうっすら変わる' },
     2: { name: 'カード', desc: '1日ずつカードに分け、晴れ・くもり・雨で淡く色分け' },
     3: { name: 'シンプル', desc: 'Notionになじむ無地の背景。区切り線なし' },
+    4: { name: '横長・週間予報', desc: 'ものさし時計に合わせた、今日とこれから6日を見渡すカード' },
   };
 
   // ---- 天気の種類 ----
@@ -333,9 +346,10 @@
     const pop0 = d.precipitation_probability_max[0];
     const gNow = el.dataset.g;
     const simple = el.classList.contains('s3');
+    const editorial = el.classList.contains('s4');
 
     let days = '';
-    for (let i = 0; i < d.time.length; i++) {
+    for (let i = editorial ? 1 : 0; i < d.time.length; i++) {
       const dt = new Date(d.time[i] + 'T00:00:00');
       const k = kindOf(d.weather_code[i]);
       const label = i === 0 ? '今日' : i === 1 ? '明日' : DOW[dt.getDay()] + (simple ? '曜日' : '');
@@ -354,7 +368,7 @@
         `<div class="now-main"><div class="big">${icon(kind, night, pop0)}</div>` +
           `<div><div class="temp">${rnd(c.temperature_2m)}<small>°C</small></div><div class="desc">${LABEL[c.weather_code] || ''}</div></div></div>` +
         `<div class="hl"><span>最高 <span class="hi">${rnd(d.temperature_2m_max[0])}°</span></span><span>最低 <span class="lo">${rnd(d.temperature_2m_min[0])}°</span></span></div>` +
-        `<div class="meta">体感 ${rnd(c.apparent_temperature)}°　湿度 ${rnd(c.relative_humidity_2m)}%　降水 ${pop0 == null ? '–' : pop0 + '%'}</div>` +
+        `<div class="meta">${editorial ? '☂ 降水 ' + (pop0 == null ? '–' : pop0 + '%') : '体感 ' + rnd(c.apparent_temperature) + '°　湿度 ' + rnd(c.relative_humidity_2m) + '%　降水 ' + (pop0 == null ? '–' : pop0 + '%')}</div>` +
         (message(kind, d.temperature_2m_max[0], pop0 || 0) ? `<div class="msg">${message(kind, d.temperature_2m_max[0], pop0 || 0)}</div>` : '') +
       '</div>' +
       `<div class="week">${days}</div></div>`;
