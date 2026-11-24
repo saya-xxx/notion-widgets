@@ -50,10 +50,15 @@ function timerState(payload,now){
  const target=future&&timerDayKey(future.start)===today?future:null;
  if(target){
   const previous=events.filter(e=>e.end<=target.start&&timerDayKey(e.end)===today).reduce((a,e)=>Math.max(a,e.end),0);
-  const anchor=Math.min(target.start-60000,Math.max(payload.updatedAt,previous));
-  const span=target.start-anchor;
   const hasDeparture=Number.isFinite(target.prepareAt)&&target.prepareAt<target.start;
+  const deadline=hasDeparture?target.prepareAt:target.start;
+  const anchor=Math.min(deadline-60000,Math.max(payload.updatedAt,previous));
+  const span=deadline-anchor;
   const prepAt=hasDeparture?target.prepareAt:target.start-15*60000;
+  if(hasDeparture){
+   const remaining=deadline-now;
+   return {mode:remaining<=15*60000?'warning':'upcoming',title:remaining<0?'出発時刻を過ぎています':'出発まで',hint:'出発 '+timerClock(deadline)+' ／ 予定開始 '+timerClock(target.start),event:timerClock(target.start)+' '+target.title,remaining:remaining<0?'出発時刻から '+timerDuration(-remaining)+'経過':remaining===0?'出発の時刻です':'出発まで 残り '+timerDuration(remaining),next:TIMER_CATEGORIES[target.category],fill:Math.max(0,Math.min(1,remaining/span)),prepFraction:0,markerLabel:'出発',endpoint:'出発'};
+  }
   const warning=now>=prepAt;
   const remaining=target.start-now;
   return {mode:warning?'warning':'upcoming',title:'次の予定まで',hint:warning?(hasDeparture?'出発の目安の時刻です':'そろそろ準備の時間です'):(hasDeparture?'出発の目安 '+timerClock(prepAt):'準備の目安は15分前'),event:timerClock(target.start)+' '+target.title,remaining:'残り '+timerDuration(remaining),next:TIMER_CATEGORIES[target.category],fill:Math.max(0,Math.min(1,remaining/span)),prepFraction:Math.max(0,Math.min(1,(target.start-prepAt)/span)),markerLabel:hasDeparture?'出発':'準備',endpoint:'開始'};
