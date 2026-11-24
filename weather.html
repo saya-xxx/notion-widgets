@@ -194,6 +194,7 @@
 @container(max-width:740px){.s5 .wrap{padding:12px;grid-template-rows:minmax(165px,1fr) 86px;min-height:275px}.s5 .overview{grid-template-columns:minmax(180px,.85fr) minmax(0,1.35fr);gap:12px}.s5 .current{padding-right:10px;gap:14px}.s5 .current-icon{width:50px}.s5 .current-temp{font-size:34px}.s5 .current-temp small{font-size:20px}.s5 .current-pop{font-size:11px}.s5 .current-range{font-size:10px}.s5 .chart-heading{font-size:11px;flex-wrap:wrap}.s5 .chart-key{font-size:9px}.s5 .day .ico svg{width:27px}.s5 .day .t{font-size:10px}}
 @container(max-width:480px){.s5 .wrap{height:auto;min-height:100%;grid-template-rows:auto 85px}.s5 .overview{grid-template-columns:1fr;gap:12px}.s5 .current{border-right:0;border-bottom:1px solid #696b5b;padding:0 0 12px;gap:8px}.s5 .current-info{justify-content:center}.s5 .hourly svg{max-height:none}.s5 .day .t{flex-direction:column}.s5 .day .dl{font-size:10px}}
 .s5 .wrap{border:0;border-radius:0;background:transparent}
+.s5 .current{align-items:center;text-align:center}.s5 .current-info{justify-content:center;text-align:left}
 </style>
 </head>
 <body>
@@ -370,10 +371,10 @@
     }
     points.forEach((p,i)=>{
       labels+=`<text x="${x(i)}" y="132" text-anchor="middle" fill="#deded0" font-size="12">${p.hour}時</text>`;
-      if(p.p!==null){const yy=yP(p.p);bars+=`<rect x="${x(i)-20}" y="${yy}" width="40" height="${bottom-yy}" rx="2" fill="#72a8c2" fill-opacity=".52"><title>${p.hour}時 降水確率 ${p.p}%</title></rect><text x="${x(i)}" y="${Math.max(top+12,yy-5)}" text-anchor="middle" fill="#8fc2d9" font-size="10">${p.p}%</text>`;}
+      if(p.p!==null){const yy=yP(p.p);bars+=`<rect x="${x(i)-20}" y="${yy}" width="40" height="${bottom-yy}" rx="2" fill="#72a8c2" fill-opacity=".52"><title>${p.hour}時 降水確率 ${p.p}%</title></rect>`;labels+=`<text class="hourly-pop" x="${x(i)}" y="151" text-anchor="middle" fill="#8fc2d9" font-size="12">${p.p}%</text>`;}
       if(p.t!==null){const yy=yT(p.t);path+=(connected?' L ':' M ')+x(i)+' '+yy;connected=true;dots+=`<circle cx="${x(i)}" cy="${yy}" r="4" fill="#b3d49e"><title>${p.hour}時 気温 ${rnd(p.t)}℃</title></circle><text x="${x(i)}" y="${Math.max(15,yy-12)}" text-anchor="middle" fill="#e0ead4" font-size="12">${rnd(p.t)}°</text>`;}else connected=false;
     });
-    return '<div class="chart-heading"><span>今日の気温と降水確率</span><div class="chart-key"><span>━ 気温</span><span>▥ 降水確率</span></div></div>'+`<svg viewBox="0 0 560 140" role="img" aria-label="${date} 6時から21時の気温と降水確率。気温は左軸、降水確率は右軸"><title>時間別予報：気温は折れ線、降水確率は棒グラフ</title>${lines}${bars}<path d="${path}" fill="none" stroke="#b3d49e" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
+    return '<div class="chart-heading"><span>今日の気温と降水確率</span><div class="chart-key"><span>━ 気温</span><span>▥ 降水確率</span></div></div>'+`<svg viewBox="0 0 560 160" role="img" aria-label="${date} 6時から21時の気温と降水確率。気温は左軸、降水確率は右軸。各時間の下に降水確率"><title>時間別予報：気温は折れ線、降水確率は棒グラフ。降水確率の数値は時間の下に表示</title>${lines}${bars}<path d="${path}" fill="none" stroke="#b3d49e" stroke-width="2.5" stroke-linejoin="round"/>${dots}${labels}</svg>`;
   }
   function render(w) {
     const el = w.el;
