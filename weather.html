@@ -363,7 +363,8 @@
     const low=temps.length?Math.floor((Math.min(...temps)-2)/5)*5:0;
     const high=temps.length?Math.max(low+10,Math.ceil((Math.max(...temps)+2)/5)*5):20;
     const left=42,right=510,top=30,bottom=108;
-    const x=i=>left+(right-left)*i/(points.length-1),yT=t=>bottom-(t-low)/(high-low)*(bottom-top),yP=p=>bottom-p/100*(bottom-top);
+    const pointInset=28; // Keep the full bar width clear of both axis labels.
+    const x=i=>left+pointInset+(right-left-2*pointInset)*i/(points.length-1),yT=t=>bottom-(t-low)/(high-low)*(bottom-top),yP=p=>bottom-p/100*(bottom-top);
     let lines='',bars='',dots='',labels='',path='',connected=false;
     for(let i=0;i<3;i++){
       const y=bottom-(bottom-top)*i/2,temp=low+(high-low)*i/2;
